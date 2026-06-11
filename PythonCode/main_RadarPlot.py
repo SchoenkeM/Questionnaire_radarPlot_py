@@ -37,6 +37,9 @@ OUTPUT_DIR  = os.path.normpath(os.path.join(_BASE_DIR, 'Output_RadarPlot'))
 # Output figure dimensions in centimetres [width, height].
 FIG_SIZE_CM = [24, 22]
 
+# Output file format: 'png' or 'svg'.
+FIG_FORMAT = 'png'
+
 # Vertical spacing between rows in the answer-options list.
 # 1.0 = default even distribution; >1 increases the gap, <1 tightens it.
 OPTION_LINE_SPACING = 1.0
@@ -64,13 +67,14 @@ def _sanitize(text: str) -> str:
     return text.strip()
 
 
-def build_filename(section: str, question: str, max_len: int = 100) -> str:
-    """Return a safe .png filename derived from section + question strings."""
+def build_filename(section: str, question: str, max_len: int = 100,
+                   fmt: str = 'png') -> str:
+    """Return a safe filename derived from section + question strings."""
     combined = _sanitize(section) + '_' + _sanitize(question)
     combined = combined.strip(' -_')
     if len(combined) > max_len:
         combined = combined[:max_len].rstrip(' -_')
-    return combined + '.png'
+    return f'{combined}.{fmt}'
 
 
 # ── Options-list subplot ─────────────────────────────────────────────────────
@@ -147,7 +151,7 @@ def main():
             _draw_options_list(ax_list, options)
 
             # --- save --------------------------------------------------------
-            fname    = build_filename(section, question)
+            fname    = build_filename(section, question, fmt=FIG_FORMAT)
             out_path = os.path.join(out_dir, fname)
             fig.savefig(out_path, bbox_inches='tight', dpi=150)
             plt.close(fig)
