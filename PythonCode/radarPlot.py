@@ -14,6 +14,11 @@ from matplotlib.patches import Patch
 # Adjust these RGB tuples (0-255) to change series colours.
 RGB_X = (0,   114, 189)   # blue  — Authority
 RGB_Y = (50,  168,  82)   # green — Science
+
+# Text colour: tick labels, axis labels, spines.
+COLOR_TEXT = '#222222'
+# Grid / spider-web line colour.
+COLOR_LINE = '#AAAAAA'
 # ────────────────────────────────────────────────────────────────────────────
 
 _ALPHA = 0.25
@@ -93,9 +98,9 @@ def radarPlot(ax, X, Y, attributes=None, N_X=None, N_Y=None):
     ax.set_rlabel_position(180 / n)
 
     # --- styling ------------------------------------------------------------
-    ax.tick_params(colors='#222222')
-    ax.grid(color='#AAAAAA')
-    ax.spines['polar'].set_color('#222222')
+    ax.tick_params(colors=COLOR_TEXT)
+    ax.grid(color=COLOR_LINE)
+    ax.spines['polar'].set_color(COLOR_TEXT)
     ax.set_facecolor('#FAFAFA')
 
     # --- legend with respondent counts -------------------------------------

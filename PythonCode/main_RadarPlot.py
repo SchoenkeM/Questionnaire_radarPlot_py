@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 main_RadarPlot.py
-
+Version: v1.0.0
+Date: 2024-06-17
 For every CSV in ../InputData/:
   1. Import and aggregate survey data          (importSurvey)
   2. Group rows by Question (key 2)
@@ -30,6 +31,16 @@ from radarPlot    import radarPlot      # noqa: E402
 _BASE_DIR   = os.path.join(_SCRIPT_DIR, '..')
 INPUT_DIR   = os.path.normpath(os.path.join(_BASE_DIR, 'InputData'))
 OUTPUT_DIR  = os.path.normpath(os.path.join(_BASE_DIR, 'Output_RadarPlot'))
+
+
+# ── Figure configuration ─────────────────────────────────────────────────────
+# Output figure dimensions in centimetres [width, height].
+FIG_SIZE_CM = [24, 22]
+
+# Vertical spacing between rows in the answer-options list.
+# 1.0 = default even distribution; >1 increases the gap, <1 tightens it.
+OPTION_LINE_SPACING = 1.0
+# ─────────────────────────────────────────────────────────────────────────────
 
 
 # ── Filename helpers ─────────────────────────────────────────────────────────
@@ -68,7 +79,7 @@ def _draw_options_list(ax, options: list[str]) -> None:
     """Render the Options list as labelled rows on a plain Axes."""
     ax.axis('off')
     n = len(options)
-    row_h = 1.0 / (n + 1)          # fractional height per row
+    row_h = (1.0 / (n + 1)) * OPTION_LINE_SPACING
     for i, opt in enumerate(options):
         wrapped = textwrap.fill(opt, width=55)
         y_pos = 1.0 - (i + 1) * row_h
@@ -115,11 +126,12 @@ def main():
             attributes = [chr(ord('a') + i) for i in range(n_opts)]
 
             # --- figure layout -----------------------------------------------
-            fig_h = max(6, n_opts * 0.55 + 2)
-            fig   = plt.figure(figsize=(15, fig_h))
-
-            ax_radar = fig.add_subplot(1, 2, 1, polar=True)
-            ax_list  = fig.add_subplot(1, 2, 2)
+            fig = plt.figure(figsize=(FIG_SIZE_CM[0] / 2.54,
+                                      FIG_SIZE_CM[1] / 2.54))
+            gs = fig.add_gridspec(2, 1, height_ratios=[3, 1],
+                                  hspace=0.35)
+            ax_radar = fig.add_subplot(gs[0], polar=True)
+            ax_list  = fig.add_subplot(gs[1])
 
             # --- radar chart -------------------------------------------------
             radarPlot(ax_radar, X, Y, attributes, N_X=N_A, N_Y=N_S)
