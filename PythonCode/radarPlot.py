@@ -19,6 +19,12 @@ RGB_Y = (50,  168,  82)   # green — Science
 COLOR_TEXT = '#222222'
 # Grid / spider-web line colour.
 COLOR_LINE = '#AAAAAA'
+
+FONTSIZE_LABEL = 20
+
+# Hex Code white: #FFFFFF
+# Light Gray: #d4d9d8
+
 # ────────────────────────────────────────────────────────────────────────────
 
 _ALPHA = 0.25
@@ -29,7 +35,7 @@ def _rgb(t):
     return tuple(c / 255 for c in t)
 
 
-def radarPlot(ax, X, Y, attributes=None, N_X=None, N_Y=None):
+def radarPlot(ax, X, Y, attributes=None, N_X=None, N_Y=None, disp_legend=True):
     """
     Draw a two-series radar chart on *ax* (must be a polar Axes).
 
@@ -69,10 +75,10 @@ def radarPlot(ax, X, Y, attributes=None, N_X=None, N_Y=None):
     cx = _rgb(RGB_X)
     cy = _rgb(RGB_Y)
 
-    ax.plot(ang_closed, X_closed, color=cx, linewidth=1.5)
+    ax.plot(ang_closed, X_closed, color=cx, linewidth=3)
     ax.fill(ang_closed, X_closed, color=cx, alpha=_ALPHA)
 
-    ax.plot(ang_closed, Y_closed, color=cy, linewidth=1.5)
+    ax.plot(ang_closed, Y_closed, color=cy, linewidth=3)
     ax.fill(ang_closed, Y_closed, color=cy, alpha=_ALPHA)
 
     # --- axis layout --------------------------------------------------------
@@ -80,7 +86,8 @@ def radarPlot(ax, X, Y, attributes=None, N_X=None, N_Y=None):
     ax.set_theta_direction(-1)
 
     # Pass the OPEN angles array so its length matches the labels list
-    ax.set_thetagrids(np.degrees(angles), attributes, fontsize=9)
+    ax.set_thetagrids(np.degrees(angles), attributes, fontsize=FONTSIZE_LABEL,
+                      fontweight='bold')
 
     # Adjust label alignment based on position in the circle
     for label, angle in zip(ax.get_xticklabels(), angles):
@@ -94,7 +101,8 @@ def radarPlot(ax, X, Y, attributes=None, N_X=None, N_Y=None):
     # --- y-axis (radial) scale ----------------------------------------------
     ax.set_ylim(0, 100)
     ax.set_yticks([25, 50, 75, 100])
-    ax.set_yticklabels(['25 %', '50 %', '75 %', '100 %'], fontsize=7)
+    ax.set_yticklabels(['25 %', '50 %', '75 %', '100 %'], fontsize=FONTSIZE_LABEL,
+                      fontweight='bold')
     ax.set_rlabel_position(180 / n)
 
     # --- styling ------------------------------------------------------------
@@ -104,12 +112,15 @@ def radarPlot(ax, X, Y, attributes=None, N_X=None, N_Y=None):
     ax.set_facecolor('#FAFAFA')
 
     # --- legend with respondent counts -------------------------------------
-    legend_handles = [
-        Patch(facecolor=cx, alpha=0.5 + _ALPHA,
-              label=f'Authority  (N = {int(scale_X)})'),
-        Patch(facecolor=cy, alpha=0.5 + _ALPHA,
-              label=f'Science    (N = {int(scale_Y)})'),
-    ]
-    ax.legend(handles=legend_handles,
-              loc='upper right', bbox_to_anchor=(1.45, 1.15),
-              fontsize=9, framealpha=0.8)
+    if disp_legend:
+        legend_handles = [
+            Patch(facecolor=cx, alpha=0.5 + _ALPHA,
+                label=f'Authority  (N = {int(scale_X)})'),
+            Patch(facecolor=cy, alpha=0.5 + _ALPHA,
+                label=f'Science    (N = {int(scale_Y)})'),
+        ]
+        legend = ax.legend(handles=legend_handles,
+                loc='upper right', bbox_to_anchor=(1.45, 1.15),
+                fontsize=FONTSIZE_LABEL, framealpha=0.8)
+        for text in legend.get_texts():
+            text.set_fontweight('bold')

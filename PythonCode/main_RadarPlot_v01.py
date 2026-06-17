@@ -36,29 +36,26 @@ OUTPUT_DIR  = os.path.normpath(os.path.join(_BASE_DIR, 'Output_RadarPlot'))
 
 # ── Figure configuration ─────────────────────────────────────────────────────
 # Set True to render only the first question group (quick output check).
-PLOT_FIRST_ONLY = True
+PLOT_FIRST_ONLY = False
 
 # Output figure dimensions in centimetres [width, height].
-# Note: [height] controls only the radar-chart portion. The options-list
-# area below it is sized dynamically per question (see LIST_LINE_HEIGHT_IN),
-# so the final saved figure is taller than this by that extra amount.
 FIG_SIZE_CM = [14, 18]
 FIG_RESOLUTION_DPI = 150
 
 # FontSize
-FONTSIZE_ANSWERS_TITLE = 24
-FONTSIZE_ANSWERS_TEXT = 24
-FONTSIZE_FIGURE_TITLE = 24
+FONTSIZE_ANSWERS_TITLE = 18
+FONTSIZE_ANSWERS_TEXT = 18
+FONTSIZE_FIGURE_TITLE = 18
 
 # Max characters per line for the question title; breaks only at word boundaries.
 QUESTION_WRAP_WIDTH = 40
 
-OPTION_WRAP_WIDTH = 40
-
 FIG_NAME_WRAP_LENGTH = 100
 
+OPTION_WRAP_WIDTH = 40
+
 # Option to enable or disable the legend (labels for radar axes)
-PRINT_LEGEND = True
+PRINT_LEGEND = False
 
 # Output file format: 'png' or 'svg'.
 FIG_FORMAT = 'png'
@@ -66,17 +63,8 @@ FIG_FORMAT = 'png'
 # ANSWERS ALIGNMENT
 # Vertical spacing between rows in the answer-options list.
 # 1.0 = default even distribution; >1 increases the gap, <1 tightens it.
-OPTION_LINE_SPACING = 1.8
-OPTIONAL_TEXT_ALIGNMENT_X = -0.3
-
-# Absolute height (inches) reserved per wrapped text line in the options
-# list, identical for every figure regardless of how many lines it has.
-LIST_LINE_HEIGHT_IN = (FONTSIZE_ANSWERS_TEXT / 72) * OPTION_LINE_SPACING
-
-# Single absolute gap (inches) used for both vertical breathing-room spots:
-#   1) between the figure title and the radar chart
-#   2) between the radar chart and the options list
-SECTION_GAP_IN = 2
+OPTION_LINE_SPACING = 2
+OPTIONAL_TEXT_ALIGNMENT_X = -0.1
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -113,24 +101,21 @@ def build_filename(section: str, question: str, max_len: int = FIG_NAME_WRAP_LEN
 
 # ── Options-list subplot ─────────────────────────────────────────────────────
 
-def _wrap_options(options: list[str]) -> tuple[list[str], list[int]]:
-    """Word-wrap each option and count how many physical lines it occupies."""
-    wrapped_lines = [textwrap.fill(opt, width=OPTION_WRAP_WIDTH) for opt in options]
-    line_counts   = [w.count('\n') + 1 for w in wrapped_lines]
-    return wrapped_lines, line_counts
-
-
-def _draw_options_list(ax, wrapped_lines: list[str], line_counts: list[int]) -> None:
-    """Render pre-wrapped Options text as evenly spaced rows on a plain Axes.
-
-    The Axes is expected to already be sized (via LIST_LINE_HEIGHT_IN) to
-    exactly fit `sum(line_counts)` lines, so an even 1/total_lines split
-    here reproduces that fixed per-line height with no overlap or squeeze.
-    """
+def _draw_options_list(ax, options: list[str]) -> None:
+    """Render the Options list as labelled rows on a plain Axes."""
     ax.axis('off')
-    total_lines = sum(line_counts)
-    row_h = 1 / total_lines
-    y_pos = 1.0
+
+    wrapped_lines = [textwrap.fill(opt, width=OPTION_WRAP_WIDTH) for opt in options]
+    # Number of physical lines each wrapped option occupies (>=1).
+    line_counts   = [w.count('\n') + 1 for w in wrapped_lines]
+    total_lines   = sum(line_counts)
+
+    # Height of a single text line, scaled by the spacing setting. Rows that
+    # wrap onto multiple lines simply consume that many line-heights, so the
+    # next row's start position is pushed down accordingly instead of
+    # overlapping it.
+    row_h = (1 / (total_lines + 1)) * OPTION_LINE_SPACING
+    y_pos = 1.5 - row_h
     for wrapped, lc in zip(wrapped_lines, line_counts):
         ax.text(OPTIONAL_TEXT_ALIGNMENT_X, y_pos, wrapped,
                 transform=ax.transAxes,
@@ -176,30 +161,11 @@ def main():
             # Auto-generate single-letter labels for the radar axes
             attributes = [chr(ord('a') + i) for i in range(n_opts)]
 
-            # --- size the options-list area to fit this question's text ------
-            wrapped_lines, line_counts = _wrap_options(options)
-            total_lines     = sum(line_counts)
-            radar_height_in = FIG_SIZE_CM[1] / 2.54
-            list_height_in  = total_lines * LIST_LINE_HEIGHT_IN
-            # SECTION_GAP_IN is added once here as real, additional figure
-            # height for the radar<->list gap (see hspace below); the
-            # title<->radar gap is added separately via the suptitle's y.
-            fig_height_in   = radar_height_in + SECTION_GAP_IN + list_height_in
-
             # --- figure layout -----------------------------------------------
-            fig = plt.figure(figsize=(FIG_SIZE_CM[0] / 2.54, fig_height_in))
-            # hspace is a fraction of the average subplot height; convert our
-            # absolute SECTION_GAP_IN into that fraction so the rendered gap
-            # is the same fixed size regardless of how tall either subplot is.
-            avg_subplot_height_in = (radar_height_in + list_height_in) / 2
-            hspace = SECTION_GAP_IN / avg_subplot_height_in
-            # top=1/bottom=0 make the grid span the full figure height; by
-            # default matplotlib reserves an implicit margin here (~top=0.88,
-            # bottom=0.11), which would otherwise add extra unaccounted-for
-            # space above the radar chart on top of SECTION_GAP_IN.
-            gs = fig.add_gridspec(2, 1,
-                                  height_ratios=[radar_height_in, list_height_in],
-                                  hspace=hspace, top=1.0, bottom=0.0)
+            fig = plt.figure(figsize=(FIG_SIZE_CM[0] / 2.54,
+                                      FIG_SIZE_CM[1] / 2.54))
+            gs = fig.add_gridspec(2, 1, height_ratios=[3, 1],
+                                  hspace=0.35)
             ax_radar = fig.add_subplot(gs[0], polar=True)
             ax_list  = fig.add_subplot(gs[1])
 
@@ -211,19 +177,15 @@ def main():
             que_w  = textwrap.fill(question, width=QUESTION_WRAP_WIDTH,
                                    break_long_words=False)
             # fig.suptitle(f'{sec_w}\n{que_w}',
-            #              fontsize=FONTSIZE_FIGURE_TITLE, y=title_y,
+            #              fontsize=FONTSIZE_FIGURE_TITLE, y=1.01,
             #              ha='center', va='bottom', fontweight='bold')
 
-            # Anchored by its bottom edge (va='bottom') just above the
-            # canvas top (y=1.0); offsetting y by SECTION_GAP_IN/fig_height_in
-            # reproduces the same absolute gap used between radar and list.
-            title_y = 1 + SECTION_GAP_IN / fig_height_in
             fig.suptitle(f'{que_w}',
-                         fontsize=FONTSIZE_FIGURE_TITLE, y=title_y,
+                         fontsize=FONTSIZE_FIGURE_TITLE, y=1.01,
                          ha='center', va='bottom', fontweight='bold')
 
             # --- options list ------------------------------------------------
-            _draw_options_list(ax_list, wrapped_lines, line_counts)
+            _draw_options_list(ax_list, options)
 
             # --- save --------------------------------------------------------
             fname    = build_filename(section, question, fmt=FIG_FORMAT)
